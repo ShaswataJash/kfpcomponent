@@ -6,3 +6,4 @@ RUN curl https://rclone.org/install.sh | bash
 
 COPY data_preparation.py /tmp
 COPY run_tests.sh /tmp
+RUN chmod 544 /tmp/run_tests.sh
