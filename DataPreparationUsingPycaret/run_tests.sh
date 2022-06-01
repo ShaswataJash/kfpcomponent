@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 export RCLONE_CONFIG_REMOTEREAD_TYPE='http'
