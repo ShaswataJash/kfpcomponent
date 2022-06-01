@@ -11,7 +11,6 @@ parser.add_argument('--additional-options-csv-parsing', type=str, default= '{}',
 parser.add_argument('--type-of-data-analysis-task', choices=['classification', 'regression', 'clustering', 'anomaly_detection'])
 parser.add_argument('--target-variable-name', type=str, help='for classification and regression, specify the column name holding target variable')
 parser.add_argument('--target-emptyindicator', type=str, default='', help='if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc')
-parser.add_argument('--generate-panda-dataframe-profiling-html', default=False, action="store_true", help='whether to generate data-profile data for original and transformed dataframe (can be timeconsuming)')
 parser.add_argument('--data-preparations-options', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pycaret setup() function')
 parser.add_argument('--additional-options-csv-writing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.to_csv()')
 parser.add_argument('--output-datasource-directory-to-be-mounted', type=str, help='name of the mountable directory (e.g. bucket name for s3)')
@@ -58,9 +57,6 @@ try:
     print('parse_config = (', type(parse_config), ')', parse_config)
     parse_config['filepath_or_buffer'] = os.path.join(local_datastore_read_dir,args.input_datasource_file_name)
     my_data = pandas.read_csv(**parse_config)
-    if args.generate_panda_dataframe_profiling_html:
-        original_profile = ProfileReport(my_data, title="Original dataframe", explorative=True)
-        original_profile.to_file("original_data_report.html")
     print(my_data)
     
 except BaseException as err:
@@ -120,10 +116,6 @@ try:
     print(my_transformed_data)
 
     pycaret.utils.get_system_logs() #this will print the pycaret's own log into console
-
-    if args.generate_panda_dataframe_profiling_html:
-        transformed_profile = ProfileReport(my_transformed_data, title="Transformed dataframe", explorative=True)
-        transformed_profile.to_file("transformed_data_report.html")
     
 except BaseException as err:
     pycaret.utils.get_system_logs()
