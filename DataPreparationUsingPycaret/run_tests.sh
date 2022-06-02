@@ -7,6 +7,7 @@ export RCLONE_CONFIG_REMOTEWRITE_TYPE='local'
 export RCLONE_CONFIG_REMOTEWRITE_NOUNC='true'
 
 mkdir /tmp/my_local_dir_for_test
+chmod 666 /tmp/my_local_dir_for_test
 python /tmp/data_preparation.py --input-datasource-file-name 'CTG.csv' --additional-options-csv-parsing '{"sep":"," , "header":0}' \
     --type-of-data-analysis-task 'classification' --target-variable-name 'NSP' \
     --data-preparations-options '{"ignore_low_variance":true, "remove_outliers":true, "remove_multicollinearity":true, "multicollinearity_threshold":0.7}' \
