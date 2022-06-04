@@ -13,7 +13,7 @@ parser.add_argument('--target-emptyindicator', type=str, default='', help='if ta
 parser.add_argument('--data-preparations-options', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pycaret setup() function')
 parser.add_argument('--additional-options-csv-writing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.to_csv()')
 parser.add_argument('--output-datasource-directory-mountable', default=False, action="store_true", help='whether output csv file will be written in mountable remote location')
-parser.add_argument('--output-datasource-directory-to-be-mounted', type=str, help='name of the mountable directory (e.g. bucket name for s3)')
+parser.add_argument('--output-datasource-containing-directory', type=str, help='name of the directory (e.g. bucket name for s3) where csv file will be written')
 parser.add_argument('--output-datasource-file-name', type=str, help='filename of the prepared data')
 args = parser.parse_args()
 
@@ -41,7 +41,7 @@ if input_data_read_call.returncode != 0:
 
 #output file handling
 if args.output_datasource_directory_mountable:
-    output_data_write_cmd = "rclone -v mount remotewrite:" + args.output_datasource_directory_to_be_mounted + ' ' + local_datastore_write_dir + ' --daemon'
+    output_data_write_cmd = "rclone -v mount remotewrite:" + args.output_datasource_containing_directory + ' ' + local_datastore_write_dir + ' --daemon'
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
@@ -136,7 +136,7 @@ except BaseException as err:
     sys.exit("Forceful exit as exception encountered while trying to write prepared data")
 
 if not args.output_datasource_directory_mountable:
-    output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,args.output_datasource_file_name) + " remotewrite:" + args.output_datasource_directory_to_be_mounted + '/'
+    output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,args.output_datasource_file_name) + " remotewrite:" + args.output_datasource_containing_directory + '/'
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
