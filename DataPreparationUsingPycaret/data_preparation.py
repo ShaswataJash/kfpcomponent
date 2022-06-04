@@ -12,6 +12,7 @@ parser.add_argument('--target-variable-name', type=str, help='for classification
 parser.add_argument('--target-emptyindicator', type=str, default='', help='if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc')
 parser.add_argument('--data-preparations-options', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pycaret setup() function')
 parser.add_argument('--additional-options-csv-writing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.to_csv()')
+parser.add_argument('--output-datasource-directory-mountable', default=False, action="store_true", help='whether output csv file will be written in mountable remote location')
 parser.add_argument('--output-datasource-directory-to-be-mounted', type=str, help='name of the mountable directory (e.g. bucket name for s3)')
 parser.add_argument('--output-datasource-file-name', type=str, help='filename of the prepared data')
 args = parser.parse_args()
@@ -39,13 +40,14 @@ if input_data_read_call.returncode != 0:
     sys.exit("Forceful exit as rclone returned error in context of reading")
 
 #output file handling
-output_data_write_cmd = "rclone -v mount remotewrite:" + args.output_datasource_directory_to_be_mounted + ' ' + local_datastore_write_dir + ' --daemon'
-output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-print(output_data_write_call.stdout)
-if output_data_write_call.returncode != 0:
-    print("Error in rclone, errorcode=", output_data_write_call.returncode)
-    sys.stdout.flush()
-    sys.exit("Forceful exit as rclone returned error in context of writing")
+if args.output_datasource_directory_mountable:
+    output_data_write_cmd = "rclone -v mount remotewrite:" + args.output_datasource_directory_to_be_mounted + ' ' + local_datastore_write_dir + ' --daemon'
+    output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(output_data_write_call.stdout)
+    if output_data_write_call.returncode != 0:
+        print("Error in rclone, errorcode=", output_data_write_call.returncode)
+        sys.stdout.flush()
+        sys.exit("Forceful exit as rclone returned error in context of mounted writing")
 
 #handling input csv file reading
 import pandas
@@ -132,3 +134,12 @@ except BaseException as err:
     print("Error=", err, ' ', type(err))
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while trying to write prepared data")
+
+if not args.output_datasource_directory_mountable:
+    output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,args.output_datasource_file_name) + " remotewrite:" + args.output_datasource_directory_to_be_mounted + '/'
+    output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    print(output_data_write_call.stdout)
+    if output_data_write_call.returncode != 0:
+        print("Error in rclone, errorcode=", output_data_write_call.returncode)
+        sys.stdout.flush()
+        sys.exit("Forceful exit as rclone returned error in context of writing final csv file (copy mode)")
