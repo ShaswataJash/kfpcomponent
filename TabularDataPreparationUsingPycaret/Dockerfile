@@ -2,8 +2,7 @@ FROM python:3.7.13-slim
 RUN python3 -m pip install pycaret==2.3.10
 RUN python3 -m pip install Jinja2==3.1.2
 RUN apt update
-RUN apt-get -y install ca-certificates fuse tzdata && echo "user_allow_other" >> /etc/fuse.conf
-RUN curl https://rclone.org/install.sh | bash
+RUN apt-get -y install ca-certificates tzdata fuse rclone && echo "user_allow_other" >> /etc/fuse.conf
 
 COPY src/data_preparation.py /tmp
 COPY tests/test_validation.py /tmp
