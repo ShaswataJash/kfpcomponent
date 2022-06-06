@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.7.13-slim
 RUN python3 -m pip install pycaret==2.3.10
 RUN python3 -m pip install Jinja2==3.1.2
 RUN apt update
