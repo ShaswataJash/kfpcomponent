@@ -3,7 +3,8 @@ RUN python3 -m pip install pycaret==2.3.10
 RUN python3 -m pip install Jinja2==3.1.2
 RUN apt update
 RUN apt-get -y install ca-certificates tzdata fuse rclone && echo "user_allow_other" >> /etc/fuse.conf
-
+#additional installation for pycaret in python-slim
+RUN apt-get -y install libgomp1
 COPY src/data_preparation.py /tmp
 COPY tests/test_validation.py /tmp
 COPY run_tests.sh /tmp
