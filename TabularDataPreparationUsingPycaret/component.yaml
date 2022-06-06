@@ -1,0 +1,57 @@
+name: TabularDataPreparationUsingPycaret
+description: |
+    Prepare tabular data (csv file) using pycaret library. (For pycaret's data pre-processing capabilities, refer https://pycaret.gitbook.io/docs/get-started/preprocessing)
+    pycaret internally uses pandas dataframe to read and write csv file. 
+    Input and processed csv file are stored in rclone compatible storage. Both mount and copy mode are supported. (refer: https://rclone.org/)
+    rclone configurations have to be shared through environment variables (refer: https://rclone.org/docs/#environment-variables). 
+    Thus, before using this component in kubeflow pipeline, those environment variables have to be set from pipeline. 
+
+inputs:
+- {name: input-datasource-directory-mountable, optional, description: 'whether input csv file is present in mountable remote location'}
+- {name: input-datasource-directory-to-be-mounted, type: String, description: 'if input-datasource-directory-mountable=True, name of the mountable directory (e.g. bucket name for s3)'}
+- {name: input-datasource-file-name, type: String, description: 'name of the csv file including file extension (if any)'}
+- {name: additional-options-csv-parsing, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'}
+- {name: type-of-data-analysis-task, type: List, description: 'choice amongst classification, regression, clustering, anomaly_detection'}
+- {name: target-variable-name, type: String, description: 'for classification and regression, specify the column name holding target variable'}
+- {name: target-emptyindicator, type: String, default='', description: 'if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc'}
+- {name: data-preparations-options, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pycaret setup() function'}
+- {name: additional-options-csv-writing, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.to_csv()'}
+- {name: output-datasource-directory-mountable, optional, description: 'whether output csv file will be written in mountable remote location'}
+- {name: output-datasource-containing-directory, type: String, description: 'name of the directory (e.g. bucket name for s3) where csv file will be written'}
+- {name: output-datasource-file-name, type: String, description: 'filename of the prepared data'}
+
+implementation:
+  container:
+    image: hub.docker.com/shasjash/kfpcomponents/TabularDataPreparationUsingPycaret_devlatest
+    # command is a list of strings (command-line arguments). 
+    # The YAML language has two syntaxes for lists and you can use either of them. 
+    # Here we use the "flow syntax" - comma-separated strings inside square brackets.
+    command: [
+      python3, 
+      # Path of the program inside the container
+      /tmp/data_preparation.py,
+      --input-datasource-directory-mountable,
+      {inputValue: input-datasource-directory-mountable},
+      --input-datasource-directory-to-be-mounted, 
+      {inputValue: input-datasource-directory-to-be-mounted},
+      --input-datasource-file-name, 
+      {inputValue: input-datasource-file-name},
+      --additional-options-csv-parsing, 
+      {inputValue: additional-options-csv-parsing},
+      --type-of-data-analysis-task, 
+      {inputValue: type-of-data-analysis-task},
+      --target-variable-name, 
+      {inputValue: target-variable-name},
+      --target-emptyindicator, 
+      {inputValue: target-emptyindicator},
+      --data-preparations-options, 
+      {inputValue:data-preparations-options},
+      --additional-options-csv-writing, 
+      {inputValue: additional-options-csv-writing},
+      --output-datasource-directory-mountable, 
+      {inputValue: output-datasource-directory-mountable},
+      --output-datasource-containing-directory, 
+      {inputValue: output-datasource-containing-directory},
+      --output-datasource-file-name, 
+      {inputValue: output-datasource-file-name},
+    ]
