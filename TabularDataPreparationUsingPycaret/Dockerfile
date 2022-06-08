@@ -9,7 +9,7 @@ RUN python3 -m pip install Jinja2==3.1.2
 RUN apt-get update \
     && apt-get install --no-install-recommends -y curl fuse libgomp1 unzip \
     && echo "user_allow_other" >> /etc/fuse.conf \
-    && curl https://rclone.org/install.sh \
+    && curl https://rclone.org/install.sh | bash \
     && apt-get -y remove --purge curl unzip \
     && rm -rf /var/lib/apt/lists/* \
     && rclone --version
