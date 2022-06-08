@@ -5,14 +5,14 @@ RUN python3 -m pip install pycaret==2.3.10
 RUN python3 -m pip install Jinja2==3.1.2
 
 #install fuse as dependency for rclone. Additionally, install curl, unzip for rclone installer to work
-RUN apt update
-RUN apt-get -y install ca-certificates tzdata fuse curl unzip && echo "user_allow_other" >> /etc/fuse.conf
-RUN curl https://rclone.org/install.sh | bash
-RUN apt-get -y remove --purge curl unzip
-RUN rclone --version
-
 #libgomp1 installation for pycaret in python-slim
-RUN apt-get -y install libgomp1
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y curl fuse libgomp1 unzip \
+    && echo "user_allow_other" >> /etc/fuse.conf \
+    && curl https://rclone.org/install.sh \
+    && apt-get -y remove --purge curl unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && rclone --version
 
 COPY src/data_preparation.py /tmp
 COPY tests/test_validation.py /tmp
