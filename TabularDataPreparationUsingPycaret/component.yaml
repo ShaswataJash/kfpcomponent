@@ -1,10 +1,14 @@
 name: TabularDataPreparationUsingPycaret
 description: |
     Prepare tabular data (csv file) using pycaret library. (For pycaret's data pre-processing capabilities, refer https://pycaret.gitbook.io/docs/get-started/preprocessing)
-    pycaret internally uses pandas dataframe to read and write csv file. 
+    Refer data-preparations-options in command line arguments. 
+    pycaret internally uses pandas dataframe to read and write csv file. You can utilize options exposed by panda's read_csv() and to_csv(). 
+    Refer additional-options-csv-parsing and additional-options-csv-writing in command line arguments
     Input and processed csv file are stored in rclone compatible storage. Both mount and copy mode are supported. (refer: https://rclone.org/)
     rclone configurations have to be shared through environment variables (refer: https://rclone.org/docs/#environment-variables). 
-    Thus, before using this component in kubeflow pipeline, those environment variables have to be set from pipeline. 
+    Thus, before using this component in kubeflow pipeline, those environment variables have to be set from pipeline.
+    Create rclone read and write configuration file name as 'REMOTEREAD' and 'REMOTEWRITE'. Because the same are used within code.
+    So convention for creating any environment variables related to rclone should start either with 'RCLONE_CONFIG_REMOTEREAD' or 'RCLONE_CONFIG_REMOTEWRITE' 
 
 inputs:
 - {name: input-datasource-directory-mountable, optional, description: 'whether input csv file is present in mountable remote location'}

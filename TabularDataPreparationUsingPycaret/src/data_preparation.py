@@ -114,7 +114,10 @@ try:
     if args.type_of_data_analysis_task == 'classification' or args.type_of_data_analysis_task == 'regression':
         y_transformed = get_config_fn('y')
         my_transformed_data = X_transformed.merge(y_transformed,left_index=True, right_index=True)
+    
+    print("====== PREPARED DATA ====")
     print(my_transformed_data)
+    print("=========================")
 
     pycaret.utils.get_system_logs() #this will print the pycaret's own log into console
     
