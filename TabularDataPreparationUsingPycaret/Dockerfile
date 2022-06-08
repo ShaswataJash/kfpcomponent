@@ -8,7 +8,7 @@ RUN python3 -m pip install Jinja2==3.1.2
 RUN apt update
 RUN apt-get -y install ca-certificates tzdata fuse curl unzip && echo "user_allow_other" >> /etc/fuse.conf
 RUN curl https://rclone.org/install.sh | bash
-RUN apt-get remove --purge curl unzip
+RUN apt-get -y remove --purge curl unzip
 RUN rclone --version
 
 #libgomp1 installation for pycaret in python-slim
