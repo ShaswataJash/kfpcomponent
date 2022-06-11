@@ -1,0 +1,52 @@
+name: TabularDataVisualizationUsingPandaProfiler
+description: |
+    Visualize tabular data (csv file) using pandas-profiler library. (Refer: https://github.com/ydataai/pandas-profiling)
+    Refer panda-profiler-options in command line arguments. 
+    pandas-profiler internally uses pandas dataframe to read csv file. You can utilize options exposed by panda's read_csv(). 
+    Refer additional-options-csv-parsing in command line arguments
+    Input csv file are stored in rclone compatible storage. Both mount and copy mode are supported. (refer: https://rclone.org/)
+    rclone configurations have to be shared through environment variables (refer: https://rclone.org/docs/#environment-variables). 
+    Thus, before using this component in kubeflow pipeline, those environment variables have to be set from pipeline.
+    Create rclone read configuration file name as 'REMOTEREAD'. Because the same is used within code.
+    So convention for creating any environment variables related to rclone should start with 'RCLONE_CONFIG_REMOTEREAD'.
+    Visualization data is emitted as self-sufficient single html file. 
+
+inputs:
+- {name: input-datasource-directory-mountable, optional, description: 'whether input csv file is present in mountable remote location'}
+- {name: input-datasource-directory-to-be-mounted, type: String, description: 'if input-datasource-directory-mountable=True, name of the mountable directory (e.g. bucket name for s3)'}
+- {name: input-datasource-file-name, type: String, description: 'name of the csv file including file extension (if any)'}
+- {name: additional-options-csv-parsing, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'}
+- {name: panda-profiler-options, type: String, default= '{}', description:'json formatted key-value pairs of strings which will be passed to ProfileReport()'}
+- {name: sensitive-data-present, optional, description: 'whether some sensitive data present (if so, panda-profiler will not show sample data etc.)'}
+- {name: output-visualization-absolute-path, type: String, description: 'html filepath having visualization report'}
+
+outputs:
+- {name: MLPipeline UI metadata, type: UI metadata}
+
+implementation:
+  container:
+    image: hub.docker.com/shasjash/kfpcomponents/TabularDataVisualizationUsingPandaProfiler_devlatest
+    # command is a list of strings (command-line arguments). 
+    # The YAML language has two syntaxes for lists and you can use either of them. 
+    # Here we use the "flow syntax" - comma-separated strings inside square brackets.
+    command: [
+      python3, 
+      # Path of the program inside the container
+      /tmp/data_visualization.py,
+      --input-datasource-directory-mountable,
+      {inputValue: input-datasource-directory-mountable},
+      --input-datasource-directory-to-be-mounted, 
+      {inputValue: input-datasource-directory-to-be-mounted},
+      --input-datasource-file-name, 
+      {inputValue: input-datasource-file-name},
+      --additional-options-csv-parsing, 
+      {inputValue: additional-options-csv-parsing},
+      --panda-profiler-options, 
+      {inputValue: panda-profiler-options},
+      --sensitive-data-present, 
+      {inputValue: sensitive-data-present},
+      --output-visualization-absolute-path, 
+      {inputValue: output-visualization-absolute-path},
+    ]
+    fileOutputs:
+      MLPipeline UI metadata:  /tmp/mlpipeline-ui-metadata.json
