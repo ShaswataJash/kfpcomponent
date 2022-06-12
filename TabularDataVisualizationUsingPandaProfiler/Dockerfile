@@ -1,8 +1,11 @@
 FROM python:3.7.13-slim
 
 RUN python3 -m pip install pandas-profiling==3.2.0
+#pandas-profiling 3.2 will download markupsafe-2.1.1 which is not compatible with itself. So it has to be replaced with older markupsafe
 RUN python3 -m pip install markupsafe==2.0.1
+#beautifulsoup4 and lxml are needed for test validation
 RUN python3 -m pip install beautifulsoup4==4.11.1
+RUN python3 -m pip install lxml==4.9.0
 
 #install fuse as dependency for rclone. Additionally, install curl, unzip for rclone installer to work
 RUN apt-get update \
