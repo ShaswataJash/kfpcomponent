@@ -11,17 +11,17 @@ description: |
     So convention for creating any environment variables related to rclone should start either with 'RCLONE_CONFIG_REMOTEREAD' or 'RCLONE_CONFIG_REMOTEWRITE' 
 
 inputs:
-- {name: input-datasource-directory-mountable, optional, description: 'whether input csv file is present in mountable remote location'}
-- {name: input-datasource-directory-to-be-mounted, type: String, description: 'if input-datasource-directory-mountable=True, name of the mountable directory (e.g. bucket name for s3)'}
+- {name: input-datasource-directory-mountable, type: Boolean, default: false, description: 'whether input csv file is present in mountable remote location'}
+- {name: input-datasource-directory-to-be-mounted, type: String, default: '', description: 'if input-datasource-directory-mountable=True, name of the mountable directory (e.g. bucket name for s3)'}
 - {name: input-datasource-file-name, type: String, description: 'name of the csv file including file extension (if any)'}
-- {name: additional-options-csv-parsing, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'}
-- {name: type-of-data-analysis-task, type: List, description: 'choice amongst classification, regression, clustering, anomaly_detection'}
+- {name: additional-options-csv-parsing, type: String, default: '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'}
+- {name: type-of-data-analysis-task, type: String, description: 'choice amongst classification, regression, clustering, anomaly_detection'}
 - {name: target-variable-name, type: String, description: 'for classification and regression, specify the column name holding target variable'}
-- {name: target-emptyindicator, type: String, default='', description: 'if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc'}
-- {name: data-preparations-options, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pycaret setup() function'}
-- {name: additional-options-csv-writing, type: String, default= '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.to_csv()'}
-- {name: output-datasource-directory-mountable, optional, description: 'whether output csv file will be written in mountable remote location'}
-- {name: output-datasource-containing-directory, type: String, description: 'name of the directory (e.g. bucket name for s3) where csv file will be written'}
+- {name: target-emptyindicator, type: String, default: '', description: 'if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc'}
+- {name: data-preparations-options, type: String, default: '{}', description: 'json formatted key-value pairs of strings which will be passed to pycaret setup() function'}
+- {name: additional-options-csv-writing, type: String, default: '{}', description: 'json formatted key-value pairs of strings which will be passed to pandas.to_csv()'}
+- {name: output-datasource-directory-mountable, type: Boolean, default: false, description: 'whether output csv file will be written in mountable remote location'}
+- {name: output-datasource-containing-directory, type: String, default: '', description: 'name of the directory (e.g. bucket name for s3) where csv file will be written'}
 - {name: output-datasource-file-name, type: String, description: 'filename of the prepared data'}
 
 implementation:
@@ -49,7 +49,7 @@ implementation:
       --target-emptyindicator, 
       {inputValue: target-emptyindicator},
       --data-preparations-options, 
-      {inputValue:data-preparations-options},
+      {inputValue: data-preparations-options},
       --additional-options-csv-writing, 
       {inputValue: additional-options-csv-writing},
       --output-datasource-directory-mountable, 
