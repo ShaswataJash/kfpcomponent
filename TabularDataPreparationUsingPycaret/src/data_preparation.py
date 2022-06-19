@@ -3,9 +3,11 @@ import argparse
 
 # Defining and parsing the command-line arguments
 parser = argparse.ArgumentParser(description='kubeflow pipeline component to read csv file and prepare the data')
+parser.add_argument('--bypass-rclone-for-input-data', default=False, action="store_true", help='whether input csv file should be read like local file - rclone is completely bypassed')
+parser.add_argument('--bypass-rclone-for-output-data', default=False, action="store_true", help='whether output csv file should be written like local file - rclone is completely bypassed')
+parser.add_argument('--rclone-environment-var', type=str, default= '{}', help='json formatted key-value pairs of strings which will be set as environment variables before executing rclone commands')
 parser.add_argument('--input-datasource-directory-mountable', default=False, action="store_true", help='whether input csv file is present in mountable remote location')
-parser.add_argument('--input-datasource-directory-to-be-mounted', type=str, help='if input-datasource-directory-mountable=True, name of the mountable directory (e.g. bucket name for s3)')
-parser.add_argument('--input-datasource-file-name', type=str, help='name of the csv file including file extension (if any)')
+parser.add_argument('--input-datasource-file-name', type=str, help='name of the csv file including file extension and the directory/bucket path holding the specific file(if any)')
 parser.add_argument('--additional-options-csv-parsing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.read_csv()')
 parser.add_argument('--type-of-data-analysis-task', choices=['classification', 'regression', 'clustering', 'anomaly_detection'])
 parser.add_argument('--target-variable-name', type=str, help='for classification and regression, specify the column name holding target variable')
@@ -13,25 +15,46 @@ parser.add_argument('--target-emptyindicator', type=str, default='', help='if ta
 parser.add_argument('--data-preparations-options', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pycaret setup() function')
 parser.add_argument('--additional-options-csv-writing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.to_csv()')
 parser.add_argument('--output-datasource-directory-mountable', default=False, action="store_true", help='whether output csv file will be written in mountable remote location')
-parser.add_argument('--output-datasource-containing-directory', type=str, help='name of the directory (e.g. bucket name for s3) where csv file will be written')
-parser.add_argument('--output-datasource-file-name', type=str, help='filename of the prepared data')
+parser.add_argument('--output-datasource-file-name', type=str, help='filename of the prepared data including the directory/bucket path holding the specific file(if any)')
 args = parser.parse_args()
 
-import tempfile
-local_datastore_read_dir = tempfile.mkdtemp(prefix="my_local_read-")
-print('local_datastore_read_dir:',local_datastore_read_dir)
+#sanity check of arguments
+if args.bypass_rclone_for_input_data:
+    args.input_datasource_directory_mountable = False
 
-local_datastore_write_dir = tempfile.mkdtemp(prefix="my_local_write-")
-print('local_datastore_write_dir:',local_datastore_write_dir)
+if args.bypass_rclone_for_output_data:
+    args.output_datasource_directory_mountable = False
+
+if args.bypass_rclone_for_input_data and args.bypass_rclone_for_output_data:
+    args.rclone_environment_var = '{}'
+
+#setting rclone related env
+import os
+import json
+rclone_config = json.loads(args.rclone_environment_var)
+print('rclone_config = (', type(rclone_config), ')', rclone_config)
+for item in rclone_config.items():
+    os.environ[item[0]] = item[1]
+
+#temporary directory creation
+import tempfile
+if not args.bypass_rclone_for_input_data:
+    local_datastore_read_dir = tempfile.mkdtemp(prefix="my_local_read-")
+    print('local_datastore_read_dir:',local_datastore_read_dir)
+
+if not args.bypass_rclone_for_output_data:
+    local_datastore_write_dir = tempfile.mkdtemp(prefix="my_local_write-")
+    print('local_datastore_write_dir:',local_datastore_write_dir)
 
 #input file handling
 import subprocess
-import os
 import sys
+import ntpath
 if args.input_datasource_directory_mountable:
-    input_data_read_cmd = "rclone -v mount remoteread:" + args.input_datasource_directory_to_be_mounted + ' ' + local_datastore_read_dir + ' --daemon'
+    input_data_read_cmd = "rclone -v mount remoteread:" + ntpath.dirname(args.input_datasource_file_name) + ' ' + local_datastore_read_dir + ' --daemon'
 else:
     input_data_read_cmd = "rclone -v copy remoteread:" + args.input_datasource_file_name + ' ' + local_datastore_read_dir
+print(input_data_read_cmd)
 input_data_read_call = subprocess.run(input_data_read_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 print(input_data_read_call.stdout)
 if input_data_read_call.returncode != 0:
@@ -41,7 +64,8 @@ if input_data_read_call.returncode != 0:
 
 #output file handling
 if args.output_datasource_directory_mountable:
-    output_data_write_cmd = "rclone -v mount remotewrite:" + args.output_datasource_containing_directory + ' ' + local_datastore_write_dir + ' --daemon'
+    output_data_write_cmd = "rclone -v mount remotewrite:" + ntpath.dirname(args.output_datasource_file_name) + ' ' + local_datastore_write_dir + ' --daemon'
+    print(output_data_write_cmd)
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
@@ -51,12 +75,11 @@ if args.output_datasource_directory_mountable:
 
 #handling input csv file reading
 import pandas
-import json
-
 try:
     parse_config = json.loads(args.additional_options_csv_parsing)
+    parse_config['filepath_or_buffer'] =  args.input_datasource_file_name \
+        if args.bypass_rclone_for_input_data else os.path.join(local_datastore_read_dir,ntpath.basename(args.input_datasource_file_name))
     print('parse_config = (', type(parse_config), ')', parse_config)
-    parse_config['filepath_or_buffer'] = os.path.join(local_datastore_read_dir,args.input_datasource_file_name)
     my_data = pandas.read_csv(**parse_config)
     print(my_data)
     
@@ -72,7 +95,6 @@ try:
         os.remove("logs.log") #removing any content from log which pycaret will internally use for its own logging
     print('pycaret version = ', pycaret.utils.version())
     setup_config = json.loads(args.data_preparations_options)
-    print('setup_config = (', type(setup_config), ')', setup_config)
     if args.type_of_data_analysis_task == 'classification':
         import pycaret.classification
         setup_fn = pycaret.classification.setup
@@ -107,6 +129,7 @@ try:
     setup_config['data_split_shuffle'] = False
     setup_config['html'] = False
     setup_config['silent'] = True
+    print('setup_config = (', type(setup_config), ')', setup_config)
     setup_fn(**setup_config)
     #ref: https://www.kdnuggets.com/2020/11/5-things-doing-wrong-pycaret.html
     X_transformed = get_config_fn('X')
@@ -130,16 +153,23 @@ except BaseException as err:
 #handling output csv file writing
 try:
     to_csv_config = json.loads(args.additional_options_csv_writing)
+    to_csv_config['path_or_buf'] = args.output_datasource_file_name \
+        if args.bypass_rclone_for_output_data else os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name))
     print('to_csv_config = (', type(to_csv_config), ')', to_csv_config)
-    to_csv_config['path_or_buf'] = os.path.join(local_datastore_write_dir,args.output_datasource_file_name)
     my_transformed_data.to_csv(**to_csv_config)
 except BaseException as err:
     print("Error=", err, ' ', type(err))
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while trying to write prepared data")
 
+if args.bypass_rclone_for_output_data:
+    sys.stdout.flush()
+    sys.exit(0)
+
 if not args.output_datasource_directory_mountable:
-    output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,args.output_datasource_file_name) + " remotewrite:" + args.output_datasource_containing_directory + '/'
+    output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name)) \
+        + " remotewrite:" + args.output_datasource_file_name
+    print(output_data_write_cmd)
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
