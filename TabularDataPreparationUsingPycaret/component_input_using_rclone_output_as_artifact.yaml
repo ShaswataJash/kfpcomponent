@@ -51,7 +51,7 @@ outputs:
 
 implementation:
   container:
-    image: hub.docker.com/shasjash/kfpcomponents/TabularDataPreparationUsingPycaret_devlatest
+    image: shasjash/kfpcomponents:TabularDataPreparationUsingPycaret_devlatest
     command:
     - python3 
     - /tmp/data_preparation.py
