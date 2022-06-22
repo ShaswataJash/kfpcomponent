@@ -1,0 +1,98 @@
+name: TabularDataPreparationUsingPycaretWhereInputUsingRcloneOutputAsArtifact
+description: |
+    Prepare tabular data (csv file) using pycaret library. (For pycaret's data pre-processing capabilities, refer https://pycaret.gitbook.io/docs/get-started/preprocessing)
+    Refer data-preparations-options in command line arguments. 
+    pycaret internally uses pandas dataframe to read and write csv file. You can utilize options exposed by panda's read_csv() and to_csv(). 
+    Refer additional-options-csv-parsing and additional-options-csv-writing in command line arguments
+    Input csv files can be stored in rclone compatible storage. Both mount and copy mode are supported. (refer: https://rclone.org/)
+    rclone configurations have to be shared through environment variables (refer: https://rclone.org/docs/#environment-variables). 
+    Create rclone read configuration file name as 'REMOTEREAD' . Because the same is used within code.
+    So convention for creating any environment variables related to rclone-read should start with 'RCLONE_CONFIG_REMOTEREAD'.
+    Output csv files are stored in output artifacts. Thus the csv files are written like locally mounted POSIX files.
+
+inputs:
+- name: rclone_environment_var
+  type: String
+  description: 'json formatted key-value pairs of strings which will be set as environment variables before executing rclone commands'
+- name: input_datasource_directory_mountable
+  type: Boolean 
+  description: 'whether input csv file is present in mountable remote location  when rclone is used'
+  optional: true
+- name: input_datasource_file_name
+  type: String
+  description: 'name of the csv file including file extension and the directory/bucket path holding the specific file(if any)  when rclone is used'
+- name: additional_options_csv_parsing
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'
+  optional: true
+- name: type_of_data_analysis_task
+  type: String
+  description: 'choice amongst classification, regression, clustering, anomaly_detection'
+- name: target_variable_name 
+  type: String
+  description: 'for classification and regression, specify the column name holding target variable'
+  optional: true
+- name: target_emptyindicator
+  type: String
+  description: 'if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc'
+  optional: true
+- name: data_preparations_options
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pycaret setup() function'
+  optional: true
+- name: additional_options_csv_writing
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pandas.to_csv()'
+  optional: true
+
+outputs:
+- name: output_datasource_local_file_path_when_rclone_bypassed
+  type: String
+  description: 'absolute local path of the output csv file when rclone is NOT used i.e. when output csv file is stored in output artifact of pipeline engine (e.g. argo)'
+
+implementation:
+  container:
+    image: hub.docker.com/shasjash/kfpcomponents/TabularDataPreparationUsingPycaret_devlatest
+    command:
+    - python3 
+    - /tmp/data_preparation.py
+    args:
+    - --bypass-rclone-for-output-data
+    - --rclone-environment-var
+    - {inputValue: rclone_environment_var}
+    - if:
+        cond: {isPresent: input_datasource_directory_mountable}
+        then:
+        - --input-datasource-directory-mountable
+        - {inputValue: input_datasource_directory_mountable}
+    - --input-datasource-file-name
+    - {inputValue: input_datasource_file_name}
+    - if:
+        cond: {isPresent: additional_options_csv_parsing}
+        then:
+        - --additional-options-csv-parsing
+        - {inputValue: additional_options_csv_parsing}
+    - --type-of-data-analysis-task 
+    - {inputValue: type_of_data_analysis_task}
+    - if:
+        cond: {isPresent: target_variable_name}
+        then:
+        - --target-variable-name
+        - {inputValue: target_variable_name}
+    - if:
+        cond: {isPresent: target_emptyindicator}
+        then:
+        - --target-emptyindicator
+        - {inputValue: target_emptyindicator}
+    - if:
+        cond: {isPresent: data_preparations_options}
+        then:
+        - --data-preparations-options
+        - {inputValue: data_preparations_options}
+    - if:
+        cond: {isPresent: additional_options_csv_writing}
+        then:
+        - --additional-options-csv-writing
+        - {inputValue: additional_options_csv_writing}
+    - --output-datasource-local-file-path-when-rclone-bypassed
+    - {outputPath: output_datasource_local_file_path_when_rclone_bypassed}

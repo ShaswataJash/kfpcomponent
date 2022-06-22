@@ -1,0 +1,81 @@
+name: TabularDataPreparationUsingPycaretWhereBothInputOutputAsArtifact
+description: |
+    Prepare tabular data (csv file) using pycaret library. (For pycaret's data pre-processing capabilities, refer https://pycaret.gitbook.io/docs/get-started/preprocessing)
+    Refer data-preparations-options in command line arguments. 
+    pycaret internally uses pandas dataframe to read and write csv file. You can utilize options exposed by panda's read_csv() and to_csv(). 
+    Refer additional-options-csv-parsing and additional-options-csv-writing in command line arguments
+    Input and output csv files are stored in input and output artifacts. Thus the csv files are read or written like locally mounted POSIX files.
+
+inputs:
+- name: additional_options_csv_parsing
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'
+  optional: true
+- name: type_of_data_analysis_task
+  type: String
+  description: 'choice amongst classification, regression, clustering, anomaly_detection'
+- name: target_variable_name 
+  type: String
+  description: 'for classification and regression, specify the column name holding target variable'
+  optional: true
+- name: target_emptyindicator
+  type: String
+  description: 'if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc'
+  optional: true
+- name: data_preparations_options
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pycaret setup() function'
+  optional: true
+- name: additional_options_csv_writing
+  type: String
+  description: 'json formatted key-value pairs of strings which will be passed to pandas.to_csv()'
+  optional: true
+- name: input_datasource_local_file_path_when_rclone_bypassed
+  type: String
+  description: 'absolute local path of the input csv file when rclone is NOT used i.e. when input csv file is stored in input artifact of pipeline engine (e.g. argo)'
+
+outputs:
+- name: output_datasource_local_file_path_when_rclone_bypassed
+  type: String
+  description: 'absolute local path of the output csv file when rclone is NOT used i.e. when output csv file is stored in output artifact of pipeline engine (e.g. argo)'
+
+implementation:
+  container:
+    image: hub.docker.com/shasjash/kfpcomponents/TabularDataPreparationUsingPycaret_devlatest
+    command:
+    - python3 
+    - /tmp/data_preparation.py
+    args:
+    - --bypass-rclone-for-input-data
+    - --bypass-rclone-for-output-data
+    - if:
+        cond: {isPresent: additional_options_csv_parsing}
+        then:
+        - --additional-options-csv-parsing
+        - {inputValue: additional_options_csv_parsing}
+    - --type-of-data-analysis-task 
+    - {inputValue: type_of_data_analysis_task}
+    - if:
+        cond: {isPresent: target_variable_name}
+        then:
+        - --target-variable-name
+        - {inputValue: target_variable_name}
+    - if:
+        cond: {isPresent: target_emptyindicator}
+        then:
+        - --target-emptyindicator
+        - {inputValue: target_emptyindicator}
+    - if:
+        cond: {isPresent: data_preparations_options}
+        then:
+        - --data-preparations-options
+        - {inputValue: data_preparations_options}
+    - if:
+        cond: {isPresent: additional_options_csv_writing}
+        then:
+        - --additional-options-csv-writing
+        - {inputValue: additional_options_csv_writing}
+    - --input-datasource-local-file-path-when-rclone-bypassed
+    - {inputPath: input_datasource_local_file_path_when_rclone_bypassed}
+    - --output-datasource-local-file-path-when-rclone-bypassed
+    - {outputPath: output_datasource_local_file_path_when_rclone_bypassed}

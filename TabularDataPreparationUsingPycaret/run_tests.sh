@@ -7,7 +7,7 @@ python /tmp/data_preparation.py --rclone-environment-var '{"RCLONE_CONFIG_REMOTE
     --input-datasource-file-name 'CTG.csv' --additional-options-csv-parsing '{"sep":"," , "header":0}' \
     --type-of-data-analysis-task 'classification' --target-variable-name 'NSP' \
     --data-preparations-options '{"ignore_low_variance":true, "remove_outliers":true, "remove_multicollinearity":true, "multicollinearity_threshold":0.7}' \
-    --bypass-rclone-for-output-data --output-datasource-file-name '/tmp/my_local_dir_for_test/CTG_data-prep.csv' \
+    --bypass-rclone-for-output-data --output-datasource-local-file-path-when-rclone-bypassed '/tmp/my_local_dir_for_test/CTG_data-prep.csv' \
     --additional-options-csv-writing '{"index":false}'
 
 #https://registry.opendata.aws/humor-detection/
@@ -16,7 +16,7 @@ python /tmp/data_preparation.py --rclone-environment-var '{"RCLONE_CONFIG_REMOTE
     --input-datasource-directory-mountable --input-datasource-file-name 'humor-detection-pds/Non-humours-biased.csv' \
     --type-of-data-analysis-task 'classification' --target-variable-name 'label' \
     --data-preparations-options '{"preprocess":false, "ignore_features":["image_url"]}' \
-    --bypass-rclone-for-output-data --output-datasource-file-name '/tmp/my_local_dir_for_test/Non-humours-biased_data-prep.csv' \
+    --bypass-rclone-for-output-data --output-datasource-local-file-path-when-rclone-bypassed '/tmp/my_local_dir_for_test/Non-humours-biased_data-prep.csv' \
     --additional-options-csv-writing '{"index":false}'
 
 python /tmp/test_validation.py

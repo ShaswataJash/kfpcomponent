@@ -6,24 +6,32 @@ parser = argparse.ArgumentParser(description='kubeflow pipeline component to rea
 parser.add_argument('--bypass-rclone-for-input-data', default=False, action="store_true", help='whether input csv file should be read like local file - rclone is completely bypassed')
 parser.add_argument('--bypass-rclone-for-output-data', default=False, action="store_true", help='whether output csv file should be written like local file - rclone is completely bypassed')
 parser.add_argument('--rclone-environment-var', type=str, default= '{}', help='json formatted key-value pairs of strings which will be set as environment variables before executing rclone commands')
-parser.add_argument('--input-datasource-directory-mountable', default=False, action="store_true", help='whether input csv file is present in mountable remote location')
-parser.add_argument('--input-datasource-file-name', type=str, help='name of the csv file including file extension and the directory/bucket path holding the specific file(if any)')
+parser.add_argument('--input-datasource-directory-mountable', default=False, action="store_true", help='whether input csv file is present in mountable remote location when rclone is used')
+parser.add_argument('--input-datasource-file-name', type=str, default='', help='name of the csv file including file extension and the directory/bucket path holding the specific file(if any) when rclone is used')
 parser.add_argument('--additional-options-csv-parsing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.read_csv()')
 parser.add_argument('--type-of-data-analysis-task', choices=['classification', 'regression', 'clustering', 'anomaly_detection'])
 parser.add_argument('--target-variable-name', type=str, help='for classification and regression, specify the column name holding target variable')
 parser.add_argument('--target-emptyindicator', type=str, default='', help='if target variable column holds null or na, those rows will be dropped. Sometime empty can be indicated by other representative string like - or *** etc')
 parser.add_argument('--data-preparations-options', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pycaret setup() function')
 parser.add_argument('--additional-options-csv-writing', type=str, default= '{}', help='json formatted key-value pairs of strings which will be passed to pandas.to_csv()')
-parser.add_argument('--output-datasource-directory-mountable', default=False, action="store_true", help='whether output csv file will be written in mountable remote location')
-parser.add_argument('--output-datasource-file-name', type=str, help='filename of the prepared data including the directory/bucket path holding the specific file(if any)')
+parser.add_argument('--output-datasource-directory-mountable', default=False, action="store_true", help='whether output csv file will be written in mountable remote location when rclone is used')
+parser.add_argument('--output-datasource-file-name', type=str, default='', help='filename of the prepared data including the directory/bucket path holding the specific file(if any) when rclone is used')
+parser.add_argument('--input-datasource-local-file-path-when-rclone-bypassed', type=str, default='', help='absolute local path of the input csv file when rclone is NOT used i.e. when bypass-rclone-for-input-data is enabled')
+parser.add_argument('--output-datasource-local-file-path-when-rclone-bypassed', type=str, default= '', help='absolute local path of the output csv file when rclone is NOT used i.e. when bypass-rclone-for-output-data is enabled')
 args = parser.parse_args()
 
 #sanity check of arguments
 if args.bypass_rclone_for_input_data:
     args.input_datasource_directory_mountable = False
+    args.input_datasource_file_name = None
+else:
+    args.input_datasource_local_file_path_when_rclone_bypassed = None
 
 if args.bypass_rclone_for_output_data:
     args.output_datasource_directory_mountable = False
+    args.output_datasource_file_name = None
+else:
+    args.output_datasource_local_file_path_when_rclone_bypassed = None
 
 if args.bypass_rclone_for_input_data and args.bypass_rclone_for_output_data:
     args.rclone_environment_var = '{}'
@@ -77,7 +85,7 @@ if args.output_datasource_directory_mountable:
 import pandas
 try:
     parse_config = json.loads(args.additional_options_csv_parsing)
-    parse_config['filepath_or_buffer'] =  args.input_datasource_file_name \
+    parse_config['filepath_or_buffer'] =  args.input_datasource_local_file_path_when_rclone_bypassed \
         if args.bypass_rclone_for_input_data else os.path.join(local_datastore_read_dir,ntpath.basename(args.input_datasource_file_name))
     print('parse_config = (', type(parse_config), ')', parse_config)
     my_data = pandas.read_csv(**parse_config)
@@ -153,7 +161,7 @@ except BaseException as err:
 #handling output csv file writing
 try:
     to_csv_config = json.loads(args.additional_options_csv_writing)
-    to_csv_config['path_or_buf'] = args.output_datasource_file_name \
+    to_csv_config['path_or_buf'] = args.output_datasource_local_file_path_when_rclone_bypassed \
         if args.bypass_rclone_for_output_data else os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name))
     print('to_csv_config = (', type(to_csv_config), ')', to_csv_config)
     my_transformed_data.to_csv(**to_csv_config)
