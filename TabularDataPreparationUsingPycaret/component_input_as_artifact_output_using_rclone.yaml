@@ -45,7 +45,6 @@ inputs:
   type: String 
   description: 'filename of the prepared data including the directory/bucket path holding the specific file(if any) when rclone is used'
 - name: input_datasource_local_file_path_when_rclone_bypassed
-  type: String
   description: 'absolute local path of the input csv file when rclone is NOT used i.e. when input csv file is stored in input artifact of pipeline engine (e.g. argo)'
 
 implementation:

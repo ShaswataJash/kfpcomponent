@@ -47,7 +47,6 @@ inputs:
 
 outputs:
 - name: output_datasource_local_file_path_when_rclone_bypassed
-  type: String
   description: 'absolute local path of the output csv file when rclone is NOT used i.e. when output csv file is stored in output artifact of pipeline engine (e.g. argo)'
 
 implementation:
