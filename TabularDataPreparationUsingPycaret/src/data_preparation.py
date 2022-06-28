@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-import argparse
 
-# Defining and parsing the command-line arguments
+import sys
+for arg in sys.argv:
+    print(arg)
+sys.stdout.flush()
+
+import argparse
 parser = argparse.ArgumentParser(description='kubeflow pipeline component to read csv file and prepare the data')
 parser.add_argument('--bypass-rclone-for-input-data', default=False, action="store_true", help='whether input csv file should be read like local file - rclone is completely bypassed')
 parser.add_argument('--bypass-rclone-for-output-data', default=False, action="store_true", help='whether output csv file should be written like local file - rclone is completely bypassed')
@@ -39,24 +43,35 @@ if args.bypass_rclone_for_input_data and args.bypass_rclone_for_output_data:
 #setting rclone related env
 import os
 import json
-rclone_config = json.loads(args.rclone_environment_var)
-print('rclone_config = (', type(rclone_config), ')', rclone_config)
-for item in rclone_config.items():
-    os.environ[item[0]] = item[1]
+try:
+    rclone_config = json.loads(args.rclone_environment_var)
+    print('rclone_config = (', type(rclone_config), ')', rclone_config)
+    for item in rclone_config.items():
+        #replacing quote with double quote to make the values json compatible (note for string without ', below replacement has no effect)
+        os.environ[item[0]] = str(item[1]).replace('\'', '"')
+        print(item[0], ' => ', os.environ[item[0]])
+except BaseException as err:
+    print("Error=", err, ' ', type(err))
+    sys.stdout.flush()
+    sys.exit("Forceful exit as exception encountered while loading rclone_config")    
 
 #temporary directory creation
 import tempfile
-if not args.bypass_rclone_for_input_data:
-    local_datastore_read_dir = tempfile.mkdtemp(prefix="my_local_read-")
-    print('local_datastore_read_dir:',local_datastore_read_dir)
+try:
+    if not args.bypass_rclone_for_input_data:
+        local_datastore_read_dir = tempfile.mkdtemp(prefix="my_local_read-")
+        print('local_datastore_read_dir:',local_datastore_read_dir)
 
-if not args.bypass_rclone_for_output_data:
-    local_datastore_write_dir = tempfile.mkdtemp(prefix="my_local_write-")
-    print('local_datastore_write_dir:',local_datastore_write_dir)
+    if not args.bypass_rclone_for_output_data:
+        local_datastore_write_dir = tempfile.mkdtemp(prefix="my_local_write-")
+        print('local_datastore_write_dir:',local_datastore_write_dir)
+except BaseException as err:
+    print("Error=", err, ' ', type(err))
+    sys.stdout.flush()
+    sys.exit("Forceful exit as exception encountered while creating temporary directories")
 
 #input file handling
 import subprocess
-import sys
 import ntpath
 if args.input_datasource_directory_mountable:
     input_data_read_cmd = "rclone -v mount remoteread:" + ntpath.dirname(args.input_datasource_file_name) + ' ' + local_datastore_read_dir + ' --daemon'
@@ -176,7 +191,7 @@ if args.bypass_rclone_for_output_data:
 
 if not args.output_datasource_directory_mountable:
     output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name)) \
-        + " remotewrite:" + args.output_datasource_file_name
+        + " remotewrite:" + ntpath.dirname(args.output_datasource_file_name)
     print(output_data_write_cmd)
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     print(output_data_write_call.stdout)

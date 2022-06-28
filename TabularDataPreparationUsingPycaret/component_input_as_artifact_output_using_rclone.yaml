@@ -9,7 +9,10 @@ description: |
     Create rclone write configuration file name as 'REMOTEWRITE'. Because the same is used within code.
     So convention for creating any environment variables related to rclone should start either with 'RCLONE_CONFIG_REMOTEWRITE'.
     Intput csv files are stored in intput artifacts. Thus the csv files are read like locally mounted POSIX files.
-
+metadata:
+  annotations:
+    author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
+    canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_input_as_artifact_output_using_rclone.yaml
 inputs:
 - name: rclone_environment_var
   type: String

@@ -5,7 +5,10 @@ description: |
     pycaret internally uses pandas dataframe to read and write csv file. You can utilize options exposed by panda's read_csv() and to_csv(). 
     Refer additional-options-csv-parsing and additional-options-csv-writing in command line arguments
     Input and output csv files are stored in input and output artifacts. Thus the csv files are read or written like locally mounted POSIX files.
-
+metadata:
+  annotations:
+    author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
+    canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_both_input_output_as_artifact.yaml
 inputs:
 - name: additional_options_csv_parsing
   type: String

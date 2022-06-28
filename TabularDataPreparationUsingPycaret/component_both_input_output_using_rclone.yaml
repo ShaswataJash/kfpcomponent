@@ -8,7 +8,10 @@ description: |
     rclone configurations have to be shared through environment variables (refer: https://rclone.org/docs/#environment-variables). 
     Create rclone read and write configuration file name as 'REMOTEREAD' and 'REMOTEWRITE'. Because the same are used within code.
     So convention for creating any environment variables related to rclone should start either with 'RCLONE_CONFIG_REMOTEREAD' or 'RCLONE_CONFIG_REMOTEWRITE'.
-
+metadata:
+  annotations:
+    author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
+    canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_both_input_output_using_rclone.yaml
 inputs:
 - name: rclone_environment_var
   type: String
@@ -64,7 +67,6 @@ implementation:
         cond: {isPresent: input_datasource_directory_mountable}
         then:
         - --input-datasource-directory-mountable
-        - {inputValue: input_datasource_directory_mountable}
     - --input-datasource-file-name
     - {inputValue: input_datasource_file_name}
     - if:
@@ -98,6 +100,5 @@ implementation:
         cond: {isPresent: output_datasource_directory_mountable}
         then:
         - --output-datasource-directory-mountable
-        - {inputValue: output_datasource_directory_mountable}
     - --output-datasource-file-name
     - {inputValue: output_datasource_file_name}

@@ -9,7 +9,10 @@ description: |
     Create rclone read configuration file name as 'REMOTEREAD' . Because the same is used within code.
     So convention for creating any environment variables related to rclone-read should start with 'RCLONE_CONFIG_REMOTEREAD'.
     Output csv files are stored in output artifacts. Thus the csv files are written like locally mounted POSIX files.
-
+metadata:
+  annotations:
+    author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
+    canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_input_using_rclone_output_as_artifact.yaml
 inputs:
 - name: rclone_environment_var
   type: String
