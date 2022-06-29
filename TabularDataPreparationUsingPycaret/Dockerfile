@@ -11,7 +11,7 @@ RUN apt-get update \
     && echo "user_allow_other" >> /etc/fuse.conf \
     && curl https://rclone.org/install.sh | bash \
     && apt-get -y remove --purge curl unzip \
-    && apt-get autoremove \
+    && apt-get -y autoremove \
     && rm -rf /var/lib/apt/lists/* \
     && rclone --version
 
