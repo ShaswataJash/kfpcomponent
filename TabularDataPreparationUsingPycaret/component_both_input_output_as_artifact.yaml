@@ -10,6 +10,10 @@ metadata:
     author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
     canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_both_input_output_as_artifact.yaml
 inputs:
+- name: log_level
+  type: String
+  description: 'choice amongst ERROR, INFO, DEBUG'
+  optional: true
 - name: additional_options_csv_parsing
   type: String
   description: 'json formatted key-value pairs of strings which will be passed to pandas.read_csv()'
@@ -49,6 +53,11 @@ implementation:
     args:
     - --bypass-rclone-for-input-data
     - --bypass-rclone-for-output-data
+    - if:
+        cond: {isPresent: log_level}
+        then:
+        - --log-level
+        - {inputValue: log_level}
     - if:
         cond: {isPresent: additional_options_csv_parsing}
         then:

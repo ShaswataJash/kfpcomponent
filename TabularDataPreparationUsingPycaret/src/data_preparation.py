@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-
+import os
 import sys
 for arg in sys.argv:
     print(arg)
 sys.stdout.flush()
 
 import argparse
+import logging
 parser = argparse.ArgumentParser(description='kubeflow pipeline component to read csv file and prepare the data')
+parser.add_argument('--log-level', default='INFO', choices=['ERROR', 'INFO', 'DEBUG'])
 parser.add_argument('--bypass-rclone-for-input-data', default=False, action="store_true", help='whether input csv file should be read like local file - rclone is completely bypassed')
 parser.add_argument('--bypass-rclone-for-output-data', default=False, action="store_true", help='whether output csv file should be written like local file - rclone is completely bypassed')
 parser.add_argument('--rclone-environment-var', type=str, default= '{}', help='json formatted key-value pairs of strings which will be set as environment variables before executing rclone commands')
@@ -23,6 +25,10 @@ parser.add_argument('--output-datasource-file-name', type=str, default='', help=
 parser.add_argument('--input-datasource-local-file-path-when-rclone-bypassed', type=str, default='', help='absolute local path of the input csv file when rclone is NOT used i.e. when bypass-rclone-for-input-data is enabled')
 parser.add_argument('--output-datasource-local-file-path-when-rclone-bypassed', type=str, default= '', help='absolute local path of the output csv file when rclone is NOT used i.e. when bypass-rclone-for-output-data is enabled')
 args = parser.parse_args()
+
+#keeping the log format same as used in pycaret for consistency (refer: https://github.com/pycaret/pycaret/blob/master/pycaret/internal/logging.py)
+logging.basicConfig(level=args.log_level, format='%(asctime)s:%(levelname)s:%(message)s')
+os.environ["PYCARET_CUSTOM_LOGGING_LEVEL"] = args.log_level
 
 #sanity check of arguments
 if args.bypass_rclone_for_input_data:
@@ -41,17 +47,17 @@ if args.bypass_rclone_for_input_data and args.bypass_rclone_for_output_data:
     args.rclone_environment_var = '{}'
 
 #setting rclone related env
-import os
 import json
 try:
     rclone_config = json.loads(args.rclone_environment_var)
-    print('rclone_config = (', type(rclone_config), ')', rclone_config)
+    logging.info("rclone_config: type=%s content=%s", type(rclone_config), rclone_config)
     for item in rclone_config.items():
+        #converting explicitely item[1] to str because rclone config can have nested json. In that case, item[1] will be of dictonary type
         #replacing quote with double quote to make the values json compatible (note for string without ', below replacement has no effect)
         os.environ[item[0]] = str(item[1]).replace('\'', '"')
-        print(item[0], ' => ', os.environ[item[0]])
+        logging.debug('%s => %s', item[0], os.getenv(item[0]))
 except BaseException as err:
-    print("Error=", err, ' ', type(err))
+    logging.error("rclone configuration loading related error", exc_info=True)
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while loading rclone_config")    
 
@@ -60,13 +66,13 @@ import tempfile
 try:
     if not args.bypass_rclone_for_input_data:
         local_datastore_read_dir = tempfile.mkdtemp(prefix="my_local_read-")
-        print('local_datastore_read_dir:',local_datastore_read_dir)
+        logging.debug('local_datastore_read_dir:%s',local_datastore_read_dir)
 
     if not args.bypass_rclone_for_output_data:
         local_datastore_write_dir = tempfile.mkdtemp(prefix="my_local_write-")
-        print('local_datastore_write_dir:',local_datastore_write_dir)
+        logging.debug('local_datastore_write_dir:%s',local_datastore_write_dir)
 except BaseException as err:
-    print("Error=", err, ' ', type(err))
+    logging.error("temporary directory creation related error", exc_info=True)
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while creating temporary directories")
 
@@ -77,22 +83,22 @@ if args.input_datasource_directory_mountable:
     input_data_read_cmd = "rclone -v mount remoteread:" + ntpath.dirname(args.input_datasource_file_name) + ' ' + local_datastore_read_dir + ' --daemon'
 else:
     input_data_read_cmd = "rclone -v copy remoteread:" + args.input_datasource_file_name + ' ' + local_datastore_read_dir
-print(input_data_read_cmd)
+logging.info(input_data_read_cmd)
 input_data_read_call = subprocess.run(input_data_read_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-print(input_data_read_call.stdout)
+logging.info(input_data_read_call.stdout)
 if input_data_read_call.returncode != 0:
-    print("Error in rclone, errorcode=", input_data_read_call.returncode)
+    logging.error("Error in rclone, errorcode= %s", input_data_read_call.returncode)
     sys.stdout.flush()
     sys.exit("Forceful exit as rclone returned error in context of reading")
 
 #output file handling
 if args.output_datasource_directory_mountable:
     output_data_write_cmd = "rclone -v mount remotewrite:" + ntpath.dirname(args.output_datasource_file_name) + ' ' + local_datastore_write_dir + ' --daemon'
-    print(output_data_write_cmd)
+    logging.info(output_data_write_cmd)
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    print(output_data_write_call.stdout)
+    logging.info(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
-        print("Error in rclone, errorcode=", output_data_write_call.returncode)
+        logging.error("Error in rclone, errorcode=%s", output_data_write_call.returncode)
         sys.stdout.flush()
         sys.exit("Forceful exit as rclone returned error in context of mounted writing")
 
@@ -102,12 +108,12 @@ try:
     parse_config = json.loads(args.additional_options_csv_parsing)
     parse_config['filepath_or_buffer'] =  args.input_datasource_local_file_path_when_rclone_bypassed \
         if args.bypass_rclone_for_input_data else os.path.join(local_datastore_read_dir,ntpath.basename(args.input_datasource_file_name))
-    print('parse_config = (', type(parse_config), ')', parse_config)
+    logging.info("parse_config: type=%s content=%s", type(parse_config), parse_config)
     my_data = pandas.read_csv(**parse_config)
-    print(my_data)
+    logging.debug('%s', my_data)
     
 except BaseException as err:
-    print("Error=", err, ' ', type(err))
+    logging.error("csv file reading related error", exc_info=True)
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while parsing input csv file")
 
@@ -116,7 +122,7 @@ import pycaret
 try:
     if os.path.exists("logs.log"):
         os.remove("logs.log") #removing any content from log which pycaret will internally use for its own logging
-    print('pycaret version = ', pycaret.utils.version())
+    logging.info('pycaret version = %s ', pycaret.utils.version())
     setup_config = json.loads(args.data_preparations_options)
     if args.type_of_data_analysis_task == 'classification':
         import pycaret.classification
@@ -147,12 +153,12 @@ try:
         my_data[args.target_variable_name] = my_data[args.target_variable_name].replace(args.target_emptyindicator, np.nan)
         my_data = my_data.dropna(axis=0, subset=[args.target_variable_name])
 
-    setup_config['data'] = my_data
     setup_config['log_experiment'] = False
     setup_config['data_split_shuffle'] = False
     setup_config['html'] = False
     setup_config['silent'] = True
-    print('setup_config = (', type(setup_config), ')', setup_config)
+    logging.info("setup_config: type=%s content=%s", type(setup_config), setup_config)
+    setup_config['data'] = my_data #adding dataframe after logging, or else a big dataframe print happens as part of logging
     setup_fn(**setup_config)
     #ref: https://www.kdnuggets.com/2020/11/5-things-doing-wrong-pycaret.html
     X_transformed = get_config_fn('X')
@@ -161,15 +167,15 @@ try:
         y_transformed = get_config_fn('y')
         my_transformed_data = X_transformed.merge(y_transformed,left_index=True, right_index=True)
     
-    print("====== PREPARED DATA ====")
-    print(my_transformed_data)
-    print("=========================")
+    logging.debug("====== PREPARED DATA ====")
+    logging.debug('%s', my_transformed_data)
+    logging.debug("=========================")
 
-    pycaret.utils.get_system_logs() #this will print the pycaret's own log into console
+    #pycaret.utils.get_system_logs() #this will print the pycaret's own log into console
     
 except BaseException as err:
-    pycaret.utils.get_system_logs()
-    print("Error=", err, ' ', type(err))
+    #pycaret.utils.get_system_logs()
+    logging.error("exception encountered while transforming input dataframe", exc_info=True)
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while transforming input dataframe")
 
@@ -178,10 +184,10 @@ try:
     to_csv_config = json.loads(args.additional_options_csv_writing)
     to_csv_config['path_or_buf'] = args.output_datasource_local_file_path_when_rclone_bypassed \
         if args.bypass_rclone_for_output_data else os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name))
-    print('to_csv_config = (', type(to_csv_config), ')', to_csv_config)
+    logging.info("to_csv_config: type=%s content=%s", type(to_csv_config), to_csv_config)
     my_transformed_data.to_csv(**to_csv_config)
 except BaseException as err:
-    print("Error=", err, ' ', type(err))
+    logging.error("exception encountered while trying to write prepared data", exc_info=True)
     sys.stdout.flush()
     sys.exit("Forceful exit as exception encountered while trying to write prepared data")
 
@@ -192,10 +198,10 @@ if args.bypass_rclone_for_output_data:
 if not args.output_datasource_directory_mountable:
     output_data_write_cmd = "rclone -v copy " + os.path.join(local_datastore_write_dir,ntpath.basename(args.output_datasource_file_name)) \
         + " remotewrite:" + ntpath.dirname(args.output_datasource_file_name)
-    print(output_data_write_cmd)
+    logging.info(output_data_write_cmd)
     output_data_write_call = subprocess.run(output_data_write_cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    print(output_data_write_call.stdout)
+    logging.info(output_data_write_call.stdout)
     if output_data_write_call.returncode != 0:
-        print("Error in rclone, errorcode=", output_data_write_call.returncode)
+        logging.error("Error in rclone, errorcode=%s", output_data_write_call.returncode)
         sys.stdout.flush()
         sys.exit("Forceful exit as rclone returned error in context of writing final csv file (copy mode)")

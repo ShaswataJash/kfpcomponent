@@ -8,7 +8,7 @@ python /tmp/data_preparation.py --rclone-environment-var '{"RCLONE_CONFIG_REMOTE
     --type-of-data-analysis-task 'classification' --target-variable-name 'NSP' \
     --data-preparations-options '{"ignore_low_variance":true, "remove_outliers":true, "remove_multicollinearity":true, "multicollinearity_threshold":0.7}' \
     --bypass-rclone-for-output-data --output-datasource-local-file-path-when-rclone-bypassed '/tmp/my_local_dir_for_test/CTG_data-prep.csv' \
-    --additional-options-csv-writing '{"index":false}'
+    --additional-options-csv-writing '{"index":false}' --log-level 'DEBUG'
 
 #https://registry.opendata.aws/humor-detection/
 #Test: csv reading source from s3(AWS provider), rclone read in mount
@@ -17,6 +17,6 @@ python /tmp/data_preparation.py --rclone-environment-var '{"RCLONE_CONFIG_REMOTE
     --type-of-data-analysis-task 'classification' --target-variable-name 'label' \
     --data-preparations-options '{"preprocess":false, "ignore_features":["image_url"]}' \
     --bypass-rclone-for-output-data --output-datasource-local-file-path-when-rclone-bypassed '/tmp/my_local_dir_for_test/Non-humours-biased_data-prep.csv' \
-    --additional-options-csv-writing '{"index":false}'
+    --additional-options-csv-writing '{"index":false}' --log-level 'DEBUG'
 
 python /tmp/test_validation.py

@@ -14,6 +14,10 @@ metadata:
     author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
     canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/TabularDataPreparationUsingPycaret/component_input_as_artifact_output_using_rclone.yaml
 inputs:
+- name: log_level
+  type: String
+  description: 'choice amongst ERROR, INFO, DEBUG'
+  optional: true
 - name: rclone_environment_var
   type: String
   description: 'json formatted key-value pairs of strings which will be set as environment variables before executing rclone commands'
@@ -58,6 +62,11 @@ implementation:
     - /tmp/data_preparation.py
     args:
     - --bypass-rclone-for-input-data
+    - if:
+        cond: {isPresent: log_level}
+        then:
+        - --log-level
+        - {inputValue: log_level}
     - --rclone-environment-var
     - {inputValue: rclone_environment_var}
     - if:
