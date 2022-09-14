@@ -1,0 +1,52 @@
+name: KaggleDatasetFetcherWhereOutputAsArtifact
+description: |
+    Download kaggle Competitions and Dataset files. Download will be zipped form.
+    For kaggle related API, refer https://github.com/Kaggle/kaggle-api
+    In production kaggle.json should be created through kubernetes secret and mounted to KAGGLE_CONFIG_DIR environment var.
+    For quick testing, KAGGLE_USERNAME and KAGGLE_KEY environment vars can be passed through --kaggle-environment-var (not recommended for production)
+    Output csv files are stored in output artifacts. Thus the csv files are written like locally mounted POSIX files.
+metadata:
+  annotations:
+    author: Shaswata Jash <29448766+ShaswataJash@users.noreply.github.com>
+    canonical_location: https://raw.githubusercontent.com/ShaswataJash/kfpcomponent/main/KaggleDatasetFetcher/component_output_as_artifact.yaml
+
+inputs:
+- name: log_level
+  type: String
+  description: 'choice amongst ERROR, INFO, DEBUG'
+  optional: true
+- name: kaggle_environment_var
+  type: String
+  description: 'json formatted key-value pairs of strings which will be set as environment variables before executing kaggle commands'
+- name: kaggle_resource_type
+  type: String 
+  description: 'choice amongst competitions, datasets'
+- name: kaggle_resource_name
+  type: String
+  description: 'name of the competition or dataset that will be downloaded'
+
+outputs:
+- name: output_datasource_directory
+  description: 'absolute local directory where downloaded file will be stored when rclone is NOT used i.e. when output file is stored in output artifact of pipeline engine (e.g. argo)'
+
+implementation:
+  container:
+    image: shasjash/kfpcomponents:KaggleDatasetFetcher_devlatest
+    command:
+    - python3 
+    - /tmp/data_preparation.py
+    args:
+    - --bypass-rclone-for-output-data
+    - if:
+        cond: {isPresent: log_level}
+        then:
+        - --log-level
+        - {inputValue: log_level}
+    - --kaggle-environment-var
+    - {inputValue: kaggle_environment_var}
+    - --kaggle-resource-type
+    - {inputValue: kaggle_resource_type}
+    - --kaggle-resource-name
+    - {inputValue: kaggle_resource_name}
+    - --output-datasource-directory
+    - {outputPath: output_datasource_directory}
