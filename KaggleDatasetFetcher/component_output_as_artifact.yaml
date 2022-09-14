@@ -34,7 +34,7 @@ implementation:
     image: shasjash/kfpcomponents:KaggleDatasetFetcher_devlatest
     command:
     - python3 
-    - /tmp/data_preparation.py
+    - /tmp/kaggle_download.py
     args:
     - --bypass-rclone-for-output-data
     - if:

@@ -14,6 +14,3 @@ RUN apt-get update \
 RUN python3 -m pip install kaggle==1.5.12
     
 COPY src/kaggle_download.py /tmp
-COPY tests/test_validation.py /tmp
-COPY run_tests.sh /tmp
-RUN chmod 544 /tmp/run_tests.sh
